@@ -5,11 +5,6 @@ provider "aws" {
     
 }
 
-resource "aws_s3_bucket" "prod_tf_course" {
-    bucket = "tf-course-20200208"
-    acl = "private"
-  
-}
 
 resource "aws_default_vpc" "default" {}
 
@@ -90,8 +85,9 @@ resource "aws_eip" "prod_web" {
 }
 
 resource "aws_elb" "prod_web" {
+    availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
     name            = "prod-web"
-    instances       = aws_instance.prod_web[*].id
+    instances       = aws_instance.prod_web.*.id
     subnets         = [aws_default_subnet.default_az1.id,aws_default_subnet.default_az2.id]
     security_groups = [aws_security_group.prod_web.id]
 
@@ -105,4 +101,11 @@ resource "aws_elb" "prod_web" {
     tags = {
       "Terraform" = "true"
     }
+}
+
+resource "aws_elb_attachment" "prod_web" {
+  count = 2
+  elb= var.prod_web
+  instance = [element(aws_instance.prod_web.*.id, count.index)]
+  
 }
